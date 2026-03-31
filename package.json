@@ -1,0 +1,13 @@
+{
+  "name": "claude-code-statusline",
+  "version": "1.0.0",
+  "description": "Custom status line for Claude Code — cross-platform (macOS/Linux/Windows)",
+  "bin": {
+    "claude-code-statusline": "./bin/install.js"
+  },
+  "scripts": {
+    "install-statusline": "node bin/install.js"
+  },
+  "keywords": ["claude", "claude-code", "statusline", "cli"],
+  "license": "MIT"
+}
