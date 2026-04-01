@@ -96,6 +96,14 @@ try {
   cacheAge = Math.floor((Date.now() - st.mtimeMs) / 1000);
 } catch {}
 
+// Auto-remove stale lock file (e.g. left behind by a crashed process)
+const LOCK_TTL = 60; // seconds
+try {
+  const lockSt = statSync(CACHE_LOCK);
+  const lockAge = Math.floor((Date.now() - lockSt.mtimeMs) / 1000);
+  if (lockAge > LOCK_TTL) unlinkSync(CACHE_LOCK);
+} catch {}
+
 if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
   // Determine runner
   let runner = "npx";

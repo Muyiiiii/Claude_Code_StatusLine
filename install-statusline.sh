@@ -126,6 +126,20 @@ if [[ -f "$CACHE_FILE" ]]; then
   cache_age=$(( now - mtime ))
 fi
 
+# Auto-remove stale lock file (e.g. left behind by a crashed process)
+LOCK_TTL=60
+if [[ -f "$CACHE_LOCK" ]]; then
+  if [[ "$(uname)" == "Darwin" ]]; then
+    lock_mtime=$(stat -f %m "$CACHE_LOCK" 2>/dev/null || echo 0)
+  else
+    lock_mtime=$(stat -c %Y "$CACHE_LOCK" 2>/dev/null || echo 0)
+  fi
+  lock_age=$(( now - lock_mtime ))
+  if (( lock_age > LOCK_TTL )); then
+    rm -f "$CACHE_LOCK"
+  fi
+fi
+
 if (( cache_age > CACHE_TTL )) && ! [[ -f "$CACHE_LOCK" ]]; then
   (
     touch "$CACHE_LOCK"
