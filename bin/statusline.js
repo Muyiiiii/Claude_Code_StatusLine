@@ -109,7 +109,8 @@ if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
   let runner = "npx";
   try { execSync("bun --version", { stdio: "ignore" }); runner = "bunx"; } catch {}
 
-  const monthStart = new Date().toISOString().slice(0, 8) + "01";
+  const d = new Date();
+  const monthStart = d.getFullYear().toString() + String(d.getMonth() + 1).padStart(2, "0") + "01";
   const cmd = `${runner} ccusage@latest daily --json --offline --since ${monthStart}`;
 
   try {
