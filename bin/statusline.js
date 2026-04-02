@@ -2,7 +2,7 @@
 // Claude Code 自定义状态栏 (跨平台 Node.js 版本)
 
 const { execSync } = require("child_process");
-const { readFileSync, writeFileSync, mkdirSync, statSync, existsSync, unlinkSync } = require("fs");
+const { readFileSync, writeFileSync, mkdirSync, statSync } = require("fs");
 const path = require("path");
 const os = require("os");
 
@@ -82,10 +82,9 @@ function makeBar(pct, w = 12) {
   return GREEN + "█".repeat(filled) + RST + DIM + "░".repeat(empty) + RST;
 }
 
-// ── ccusage cache (non-blocking) ──
+// ── ccusage cache ──
 const CACHE_DIR = path.join(os.tmpdir(), "ccusage_cache");
 const CACHE_FILE = path.join(CACHE_DIR, "daily.json");
-const CACHE_LOCK = path.join(CACHE_DIR, "daily.lock");
 const CACHE_TTL = 300; // seconds
 
 mkdirSync(CACHE_DIR, { recursive: true });
@@ -96,16 +95,7 @@ try {
   cacheAge = Math.floor((Date.now() - st.mtimeMs) / 1000);
 } catch {}
 
-// Auto-remove stale lock file (e.g. left behind by a crashed process)
-const LOCK_TTL = 60; // seconds
-try {
-  const lockSt = statSync(CACHE_LOCK);
-  const lockAge = Math.floor((Date.now() - lockSt.mtimeMs) / 1000);
-  if (lockAge > LOCK_TTL) unlinkSync(CACHE_LOCK);
-} catch {}
-
-if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
-  // Determine runner
+if (cacheAge > CACHE_TTL) {
   let runner = "npx";
   try { execSync("bun --version", { stdio: "ignore" }); runner = "bunx"; } catch {}
 
@@ -114,26 +104,9 @@ if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
   const cmd = `${runner} ccusage@latest daily --json --offline --since ${monthStart}`;
 
   try {
-    writeFileSync(CACHE_LOCK, "");
-    const { spawn } = require("child_process");
-    const isWin = process.platform === "win32";
-    const child = spawn(isWin ? "cmd" : "sh", isWin ? ["/c", cmd] : ["-c", cmd], {
-      stdio: ["ignore", "pipe", "ignore"],
-      detached: !isWin,
-    });
-
-    let out = "";
-    child.stdout.on("data", (d) => (out += d));
-    child.on("close", (code) => {
-      if (code === 0 && out.trim()) {
-        try { writeFileSync(CACHE_FILE, out); } catch {}
-      }
-      try { unlinkSync(CACHE_LOCK); } catch {}
-    });
-    child.unref();
-  } catch {
-    try { unlinkSync(CACHE_LOCK); } catch {}
-  }
+    const out = execSync(cmd, { encoding: "utf-8", timeout: 15000, stdio: ["ignore", "pipe", "ignore"] });
+    if (out.trim()) writeFileSync(CACHE_FILE, out);
+  } catch {}
 }
 
 // ── Read cached data ──
@@ -145,11 +118,11 @@ try {
   const td = (cache.daily || []).find((d) => d.date === today);
   if (td) {
     todayCost = td.totalCost || 0;
-    todayTokens = td.totalTokens || 0;
+    todayTokens = (td.inputTokens || 0) + (td.outputTokens || 0);
   }
   if (cache.totals) {
     monthCost = cache.totals.totalCost || 0;
-    monthTokens = cache.totals.totalTokens || 0;
+    monthTokens = (cache.totals.inputTokens || 0) + (cache.totals.outputTokens || 0);
   }
 } catch {}
 
