@@ -101,7 +101,7 @@ if (cacheAge > CACHE_TTL) {
 
   const d = new Date();
   const monthStart = d.getFullYear().toString() + String(d.getMonth() + 1).padStart(2, "0") + "01";
-  const cmd = `${runner} ccusage@latest daily --json --offline --since ${monthStart}`;
+  const cmd = `${runner} ccusage@latest daily --json --since ${monthStart}`;
 
   try {
     const out = execSync(cmd, { encoding: "utf-8", timeout: 15000, stdio: ["ignore", "pipe", "ignore"] });

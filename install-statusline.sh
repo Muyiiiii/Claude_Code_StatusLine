@@ -145,7 +145,7 @@ if (( cache_age > CACHE_TTL )) && ! [[ -f "$CACHE_LOCK" ]]; then
     touch "$CACHE_LOCK"
     MONTH_START=$(date +%Y%m01)
     RUNNER_CMD="__RUNNER__"
-    $RUNNER_CMD ccusage@latest daily --json --offline --since "$MONTH_START" > "${CACHE_FILE}.tmp" 2>/dev/null \
+    $RUNNER_CMD ccusage@latest daily --json --since "$MONTH_START" > "${CACHE_FILE}.tmp" 2>/dev/null \
       && mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
     rm -f "$CACHE_LOCK"
   ) &
