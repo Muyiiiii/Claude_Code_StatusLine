@@ -65,6 +65,8 @@ FIVE_H=$(jq_get '.rate_limits.five_hour.used_percentage' '0' | cut -d. -f1)
 SEVEN_D=$(jq_get '.rate_limits.seven_day.used_percentage' '0' | cut -d. -f1)
 [ -z "$FIVE_H" ] && FIVE_H=0
 [ -z "$SEVEN_D" ] && SEVEN_D=0
+FIVE_H_RESET=$(jq_get '.rate_limits.five_hour.resets_at' '0')
+SEVEN_D_RESET=$(jq_get '.rate_limits.seven_day.resets_at' '0')
 
 SESSION_COST=$(jq_get '.cost.total_cost_usd' '0')
 LINES_ADD=$(jq_get '.cost.total_lines_added' '0')
@@ -72,11 +74,24 @@ LINES_DEL=$(jq_get '.cost.total_lines_removed' '0')
 
 # ── Model display name ──
 case "$MODEL_ID" in
+  *opus-4-7*) MODEL_VER="Opus 4.7" ;;
   *opus-4-6*|*opus-4-2*) MODEL_VER="Opus 4.6" ;;
   *sonnet-4-6*|*sonnet-4-2*) MODEL_VER="Sonnet 4.6" ;;
   *haiku*) MODEL_VER="Haiku 4.5" ;;
   *) MODEL_VER=$(jq_get '.model.display_name' '"Claude"') ;;
 esac
+
+# ── Effort level (from ~/.claude/settings.json) ──
+EFFORT=""
+if [[ -f "$HOME/.claude/settings.json" ]]; then
+  raw=$(jq -r '.effortLevel // ""' "$HOME/.claude/settings.json" 2>/dev/null)
+  case "$raw" in
+    xhigh) EFFORT="xHigh" ;;
+    high) EFFORT="High" ;;
+    medium) EFFORT="Medium" ;;
+    low) EFFORT="Low" ;;
+  esac
+fi
 
 # ── Git info ──
 BRANCH=""
@@ -98,8 +113,22 @@ fmt_tokens() {
 
 fmt_cost() { printf '$%.2f' "$1"; }
 
+fmt_reset() {
+  local epoch=$1
+  [ -z "$epoch" ] || [ "$epoch" = "0" ] && { echo ""; return; }
+  local now=$(date +%s)
+  local diff=$(( epoch - now ))
+  if (( diff <= 0 )); then echo "now"; return; fi
+  local d=$(( diff / 86400 ))
+  local h=$(( (diff % 86400) / 3600 ))
+  local m=$(( (diff % 3600) / 60 ))
+  if (( d >= 1 )); then echo "${d}d${h}h"; return; fi
+  if (( h >= 1 )); then echo "${h}h${m}m"; return; fi
+  echo "${m}m"
+}
+
 make_bar() {
-  local pct=${1:-0} w=${2:-12}
+  local pct=${1:-0} w=${2:-8}
   local filled=$(( pct * w / 100 ))
   local empty=$(( w - filled ))
   local bar="${GREEN}"
@@ -177,8 +206,17 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 # ── Output ──
-echo -e "${CYAN}[${MODEL_VER}]${RST}  📁 ${DIR_NAME} | 🌿 ${BRANCH} | ${GREEN}↑$(fmt_tokens $INPUT_TOKENS)${RST} ${GREEN}↓$(fmt_tokens $OUTPUT_TOKENS)${RST}"
-echo -e "5h:$(make_bar $FIVE_H) ${FIVE_H}% | 7d:$(make_bar $SEVEN_D) ${SEVEN_D}% | ctx:$(make_bar $CTX_PCT) ${CTX_PCT}%"
+EFFORT_TAG=""
+[ -n "$EFFORT" ] && EFFORT_TAG="${CYAN}·${EFFORT}${RST}"
+FIVE_H_TAG=""
+FIVE_H_TXT=$(fmt_reset "$FIVE_H_RESET")
+[ -n "$FIVE_H_TXT" ] && FIVE_H_TAG=" ${DIM}(${FIVE_H_TXT})${RST}"
+SEVEN_D_TAG=""
+SEVEN_D_TXT=$(fmt_reset "$SEVEN_D_RESET")
+[ -n "$SEVEN_D_TXT" ] && SEVEN_D_TAG=" ${DIM}(${SEVEN_D_TXT})${RST}"
+
+echo -e "${CYAN}[${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  📁 ${DIR_NAME} | 🌿 ${BRANCH} | ${GREEN}↑$(fmt_tokens $INPUT_TOKENS)${RST} ${GREEN}↓$(fmt_tokens $OUTPUT_TOKENS)${RST}"
+echo -e "5h:$(make_bar $FIVE_H) ${FIVE_H}%${FIVE_H_TAG} | 7d:$(make_bar $SEVEN_D) ${SEVEN_D}%${SEVEN_D_TAG} | ctx:$(make_bar $CTX_PCT) ${CTX_PCT}%"
 echo -e "${YELLOW}session:$(fmt_cost $SESSION_COST)($(fmt_tokens $SESSION_TOKENS))${RST} | ${YELLOW}today:$(fmt_cost $TODAY_COST)($(fmt_tokens $TODAY_TOKENS))${RST} | ${YELLOW}month:$(fmt_cost $MONTH_COST)($(fmt_tokens $MONTH_TOKENS))${RST}"
 echo -e "${GREEN}${FILES_CHANGED} files +${LINES_ADD} -${LINES_DEL}${RST}"
 STATUSLINE

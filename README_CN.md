@@ -8,9 +8,9 @@
 
 ## 功能特性
 
-- **模型信息** — 当前模型名称（Opus / Sonnet / Haiku）
+- **模型信息** — 当前模型名称（Opus 4.7 / 4.6、Sonnet 4.6、Haiku 4.5）及 effort 等级（xHigh / High / Medium / Low）
 - **Token 用量** — 输入/输出 Token 数，自动格式化（k / M）
-- **速率限制** — 5 小时和 7 天用量，可视化进度条
+- **速率限制** — 5 小时和 7 天用量，可视化进度条 + 重置倒计时
 - **上下文窗口** — 上下文已使用百分比
 - **费用统计** — 会话/今日/本月费用，基于 [ccusage](https://github.com/ryoppippi/ccusage)
 - **Git 状态** — 当前分支、变更文件数、增删行数
@@ -72,18 +72,20 @@ node bin/install.js
 ## 显示布局
 
 ```
-[Opus 4.6]  📁 my-project | 🌿 main | ↑125k ↓9k
-5h:████░░░░░░░░ 12% | 7d:░░░░░░░░░░░░ 3% | ctx:████░░░░░░░░ 35%
+[Opus 4.7·xHigh]  📁 my-project | 🌿 main | ↑125k ↓9k
+5h:█░░░░░░░ 12% (2h15m) | 7d:░░░░░░░░ 3% (6d2h) | ctx:██░░░░░░ 35%
 session:$0.42(134k) | today:$3.21(1.2M) | month:$28.50(15.6M)
 3 files +156 -23
 ```
 
 | 行 | 内容 |
 |----|------|
-| 1 | 模型名称、项目目录、Git 分支、输入/输出 Token |
-| 2 | 5 小时 / 7 天速率限制进度条、上下文使用率 |
+| 1 | 模型名称 + effort、项目目录、Git 分支、输入/输出 Token |
+| 2 | 5 小时 / 7 天速率限制进度条（含重置倒计时）、上下文使用率 |
 | 3 | 会话 / 今日 / 本月费用和 Token 总量 |
 | 4 | Git 变更文件数、增删行数 |
+
+Effort 等级从 `~/.claude/settings.json` 的 `effortLevel` 字段读取（由 Claude Code 的 `/model` 菜单设置）。
 
 ## 费用统计
 

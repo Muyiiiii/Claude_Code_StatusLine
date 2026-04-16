@@ -99,7 +99,7 @@ function fmtReset(epoch) {
   return `${m}m`;
 }
 
-function makeBar(pct, w = 6) {
+function makeBar(pct, w = 8) {
   pct = Math.max(0, Math.min(100, pct || 0));
   const filled = Math.round((pct * w) / 100);
   const empty = w - filled;

@@ -8,9 +8,9 @@ A custom status line for [Claude Code](https://docs.anthropic.com/en/docs/claude
 
 ## Features
 
-- **Model Info** — current model name (Opus / Sonnet / Haiku)
+- **Model Info** — current model name (Opus 4.7 / 4.6, Sonnet 4.6, Haiku 4.5) with effort level (xHigh / High / Medium / Low)
 - **Token Usage** — input / output tokens with human-readable formatting (k / M)
-- **Rate Limits** — 5-hour and 7-day usage with visual progress bars
+- **Rate Limits** — 5-hour and 7-day usage with visual progress bars + reset countdown
 - **Context Window** — percentage of context used
 - **Cost Tracking** — session / today / month costs via [ccusage](https://github.com/ryoppippi/ccusage)
 - **Git Status** — current branch, files changed, lines added/removed
@@ -72,18 +72,20 @@ After installation, restart Claude Code to see the new status line.
 ## Display Layout
 
 ```
-[Opus 4.6]  📁 my-project | 🌿 main | ↑125k ↓9k
-5h:████░░░░░░░░ 12% | 7d:░░░░░░░░░░░░ 3% | ctx:████░░░░░░░░ 35%
+[Opus 4.7·xHigh]  📁 my-project | 🌿 main | ↑125k ↓9k
+5h:█░░░░░░░ 12% (2h15m) | 7d:░░░░░░░░ 3% (6d2h) | ctx:██░░░░░░ 35%
 session:$0.42(134k) | today:$3.21(1.2M) | month:$28.50(15.6M)
 3 files +156 -23
 ```
 
 | Row | Content |
 |-----|---------|
-| 1 | Model name, project dir, git branch, input/output tokens |
-| 2 | 5-hour / 7-day rate limit bars, context window usage |
+| 1 | Model name + effort, project dir, git branch, input/output tokens |
+| 2 | 5-hour / 7-day rate limit bars with reset countdown, context window usage |
 | 3 | Session / today / month cost and token totals |
 | 4 | Git files changed, lines added/removed |
+
+The effort level is read from `~/.claude/settings.json` (`effortLevel` field, set via Claude Code's `/model` menu).
 
 ## Cost Tracking
 
