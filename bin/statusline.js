@@ -10,6 +10,7 @@ const os = require("os");
 const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
+const LBLUE = "\x1b[94m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
 
@@ -107,7 +108,9 @@ function makeBar(pct, w = 8) {
 }
 
 // ── ccusage cache (non-blocking) ──
-const CACHE_DIR = path.join(os.tmpdir(), "ccusage_cache");
+const CACHE_DIR = process.platform === "win32"
+  ? path.join(os.tmpdir(), "ccusage_cache")
+  : "/tmp/ccusage_cache";
 const CACHE_FILE = path.join(CACHE_DIR, "daily.json");
 const CACHE_LOCK = path.join(CACHE_DIR, "daily.lock");
 const CACHE_TTL = 300; // seconds
@@ -172,10 +175,10 @@ try {
 
 // ── Output ──
 const effortTag = effort ? `${CYAN}·${effort}${RST}` : "";
-const fiveHTag = fiveHReset ? ` ${DIM}(${fmtReset(fiveHReset)})${RST}` : "";
-const sevenDTag = sevenDReset ? ` ${DIM}(${fmtReset(sevenDReset)})${RST}` : "";
+const fiveHTag = fiveHReset ? ` ${LBLUE}(${fmtReset(fiveHReset)})${RST}` : "";
+const sevenDTag = sevenDReset ? ` ${LBLUE}(${fmtReset(sevenDReset)})${RST}` : "";
 
-const L1 = `${CYAN}[${modelVer}${RST}${effortTag}${CYAN}]${RST}  📁 ${dirName} | 🌿 ${branch} | ${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
+const L1 = `${CYAN}[${modelVer}${RST}${effortTag}${CYAN}]${RST}  ${YELLOW}📁 ${dirName}${RST} | ${GREEN}🌿 ${branch}${RST} | ${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
 const L2 = `5h:${makeBar(fiveH)} ${fiveH}%${fiveHTag} | 7d:${makeBar(sevenD)} ${sevenD}%${sevenDTag} | ctx:${makeBar(ctxPct)} ${ctxPct}%`;
 const L3 = `${YELLOW}session:${fmtCost(sessionCost)}(${fmtTokens(sessionTokens)})${RST} | ${YELLOW}today:${fmtCost(todayCost)}(${fmtTokens(todayTokens)})${RST} | ${YELLOW}month:${fmtCost(monthCost)}(${fmtTokens(monthTokens)})${RST}`;
 const L4 = `${GREEN}${filesChanged} files +${linesAdd} -${linesDel}${RST}`;

@@ -46,6 +46,7 @@ mkdir -p "$CACHE_DIR" 2>/dev/null
 CYAN='\033[36m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
+LBLUE='\033[94m'
 DIM='\033[2m'
 RST='\033[0m'
 
@@ -65,8 +66,10 @@ FIVE_H=$(jq_get '.rate_limits.five_hour.used_percentage' '0' | cut -d. -f1)
 SEVEN_D=$(jq_get '.rate_limits.seven_day.used_percentage' '0' | cut -d. -f1)
 [ -z "$FIVE_H" ] && FIVE_H=0
 [ -z "$SEVEN_D" ] && SEVEN_D=0
-FIVE_H_RESET=$(jq_get '.rate_limits.five_hour.resets_at' '0')
-SEVEN_D_RESET=$(jq_get '.rate_limits.seven_day.resets_at' '0')
+FIVE_H_RESET=$(jq_get '.rate_limits.five_hour.resets_at' '0' | cut -d. -f1)
+SEVEN_D_RESET=$(jq_get '.rate_limits.seven_day.resets_at' '0' | cut -d. -f1)
+[ -z "$FIVE_H_RESET" ] && FIVE_H_RESET=0
+[ -z "$SEVEN_D_RESET" ] && SEVEN_D_RESET=0
 
 SESSION_COST=$(jq_get '.cost.total_cost_usd' '0')
 LINES_ADD=$(jq_get '.cost.total_lines_added' '0')
@@ -105,7 +108,7 @@ fmt_tokens() {
   if (( t >= 1000000 )); then
     printf "%.1fM" "$(echo "scale=1; $t/1000000" | bc)"
   elif (( t >= 1000 )); then
-    printf "%.0fk" "$(echo "scale=0; $t/1000" | bc)"
+    printf "%dk" "$(( (t + 500) / 1000 ))"
   else
     printf "%d" "$t"
   fi
@@ -129,7 +132,7 @@ fmt_reset() {
 
 make_bar() {
   local pct=${1:-0} w=${2:-8}
-  local filled=$(( pct * w / 100 ))
+  local filled=$(( (pct * w + 50) / 100 ))
   local empty=$(( w - filled ))
   local bar="${GREEN}"
   for ((i=0; i<filled; i++)); do bar+="█"; done
@@ -210,12 +213,12 @@ EFFORT_TAG=""
 [ -n "$EFFORT" ] && EFFORT_TAG="${CYAN}·${EFFORT}${RST}"
 FIVE_H_TAG=""
 FIVE_H_TXT=$(fmt_reset "$FIVE_H_RESET")
-[ -n "$FIVE_H_TXT" ] && FIVE_H_TAG=" ${DIM}(${FIVE_H_TXT})${RST}"
+[ -n "$FIVE_H_TXT" ] && FIVE_H_TAG=" ${LBLUE}(${FIVE_H_TXT})${RST}"
 SEVEN_D_TAG=""
 SEVEN_D_TXT=$(fmt_reset "$SEVEN_D_RESET")
-[ -n "$SEVEN_D_TXT" ] && SEVEN_D_TAG=" ${DIM}(${SEVEN_D_TXT})${RST}"
+[ -n "$SEVEN_D_TXT" ] && SEVEN_D_TAG=" ${LBLUE}(${SEVEN_D_TXT})${RST}"
 
-echo -e "${CYAN}[${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  📁 ${DIR_NAME} | 🌿 ${BRANCH} | ${GREEN}↑$(fmt_tokens $INPUT_TOKENS)${RST} ${GREEN}↓$(fmt_tokens $OUTPUT_TOKENS)${RST}"
+echo -e "${CYAN}[${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  ${YELLOW}📁 ${DIR_NAME}${RST} | ${GREEN}🌿 ${BRANCH}${RST} | ${GREEN}↑$(fmt_tokens $INPUT_TOKENS)${RST} ${GREEN}↓$(fmt_tokens $OUTPUT_TOKENS)${RST}"
 echo -e "5h:$(make_bar $FIVE_H) ${FIVE_H}%${FIVE_H_TAG} | 7d:$(make_bar $SEVEN_D) ${SEVEN_D}%${SEVEN_D_TAG} | ctx:$(make_bar $CTX_PCT) ${CTX_PCT}%"
 echo -e "${YELLOW}session:$(fmt_cost $SESSION_COST)($(fmt_tokens $SESSION_TOKENS))${RST} | ${YELLOW}today:$(fmt_cost $TODAY_COST)($(fmt_tokens $TODAY_TOKENS))${RST} | ${YELLOW}month:$(fmt_cost $MONTH_COST)($(fmt_tokens $MONTH_TOKENS))${RST}"
 echo -e "${GREEN}${FILES_CHANGED} files +${LINES_ADD} -${LINES_DEL}${RST}"
