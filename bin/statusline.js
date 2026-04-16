@@ -45,6 +45,8 @@ let ctxPct = Math.floor(Number(get(data, "context_window.used_percentage", 0)));
 
 const fiveH = Math.floor(Number(get(data, "rate_limits.five_hour.used_percentage", 0)));
 const sevenD = Math.floor(Number(get(data, "rate_limits.seven_day.used_percentage", 0)));
+const fiveHReset = Number(get(data, "rate_limits.five_hour.resets_at", 0));
+const sevenDReset = Number(get(data, "rate_limits.seven_day.resets_at", 0));
 
 const sessionCost = Number(get(data, "cost.total_cost_usd", 0));
 const linesAdd = Number(get(data, "cost.total_lines_added", 0));
@@ -52,10 +54,20 @@ const linesDel = Number(get(data, "cost.total_lines_removed", 0));
 
 // ── Model display name ──
 let modelVer;
-if (/opus-4-6|opus-4-2/.test(modelId)) modelVer = "Opus 4.6";
+if (/opus-4-7/.test(modelId)) modelVer = "Opus 4.7";
+else if (/opus-4-6|opus-4-2/.test(modelId)) modelVer = "Opus 4.6";
 else if (/sonnet-4-6|sonnet-4-2/.test(modelId)) modelVer = "Sonnet 4.6";
 else if (/haiku/.test(modelId)) modelVer = "Haiku 4.5";
 else modelVer = get(data, "model.display_name", "Claude");
+
+// ── Effort level (from ~/.claude/settings.json) ──
+let effort = "";
+try {
+  const s = JSON.parse(readFileSync(path.join(os.homedir(), ".claude", "settings.json"), "utf-8"));
+  const raw = (s.effortLevel || "").toLowerCase();
+  const map = { xhigh: "xHigh", high: "High", medium: "Medium", low: "Low" };
+  effort = map[raw] || "";
+} catch {}
 
 // ── Git info ──
 let branch = "";
@@ -75,7 +87,19 @@ function fmtCost(v) {
   return "$" + Number(v).toFixed(2);
 }
 
-function makeBar(pct, w = 12) {
+function fmtReset(epoch) {
+  if (!epoch) return "";
+  const diff = epoch - Math.floor(Date.now() / 1000);
+  if (diff <= 0) return "now";
+  const d = Math.floor(diff / 86400);
+  const h = Math.floor((diff % 86400) / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  if (d >= 1) return `${d}d${h}h`;
+  if (h >= 1) return `${h}h${m}m`;
+  return `${m}m`;
+}
+
+function makeBar(pct, w = 6) {
   pct = Math.max(0, Math.min(100, pct || 0));
   const filled = Math.round((pct * w) / 100);
   const empty = w - filled;
@@ -137,8 +161,12 @@ try {
 } catch {}
 
 // ── Output ──
-const L1 = `${CYAN}[${modelVer}]${RST}  📁 ${dirName} | 🌿 ${branch} | ${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
-const L2 = `5h:${makeBar(fiveH)} ${fiveH}% | 7d:${makeBar(sevenD)} ${sevenD}% | ctx:${makeBar(ctxPct)} ${ctxPct}%`;
+const effortTag = effort ? `${CYAN}·${effort}${RST}` : "";
+const fiveHTag = fiveHReset ? ` ${DIM}(${fmtReset(fiveHReset)})${RST}` : "";
+const sevenDTag = sevenDReset ? ` ${DIM}(${fmtReset(sevenDReset)})${RST}` : "";
+
+const L1 = `${CYAN}[${modelVer}${RST}${effortTag}${CYAN}]${RST}  📁 ${dirName} | 🌿 ${branch} | ${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
+const L2 = `5h:${makeBar(fiveH)} ${fiveH}%${fiveHTag} | 7d:${makeBar(sevenD)} ${sevenD}%${sevenDTag} | ctx:${makeBar(ctxPct)} ${ctxPct}%`;
 const L3 = `${YELLOW}session:${fmtCost(sessionCost)}(${fmtTokens(sessionTokens)})${RST} | ${YELLOW}today:${fmtCost(todayCost)}(${fmtTokens(todayTokens)})${RST} | ${YELLOW}month:${fmtCost(monthCost)}(${fmtTokens(monthTokens)})${RST}`;
 const L4 = `${GREEN}${filesChanged} files +${linesAdd} -${linesDel}${RST}`;
 

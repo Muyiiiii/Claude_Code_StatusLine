@@ -81,13 +81,10 @@ const statusLineConfig = {
 if (fs.existsSync(SETTINGS_PATH)) {
   try {
     const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
-    if (settings.statusLine) {
-      log("⏭️  settings.json 已包含 statusLine 配置，跳过");
-    } else {
-      settings.statusLine = statusLineConfig;
-      fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + "\n");
-      log("✅ 已更新 settings.json");
-    }
+    const existed = !!settings.statusLine;
+    settings.statusLine = statusLineConfig;
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2) + "\n");
+    log(existed ? "✅ 已替换 settings.json 中的 statusLine 配置（其他字段保留）" : "✅ 已更新 settings.json");
   } catch (e) {
     fail(`❌ 解析 settings.json 失败: ${e.message}`);
   }
