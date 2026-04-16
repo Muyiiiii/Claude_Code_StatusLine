@@ -11,6 +11,7 @@ const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const LBLUE = "\x1b[94m";
+const WHITE = "\x1b[97m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
 
@@ -179,7 +180,7 @@ const fiveHTag = fiveHReset ? ` ${LBLUE}(${fmtReset(fiveHReset)})${RST}` : "";
 const sevenDTag = sevenDReset ? ` ${LBLUE}(${fmtReset(sevenDReset)})${RST}` : "";
 
 const L1 = `${CYAN}[${modelVer}${RST}${effortTag}${CYAN}]${RST}  ${YELLOW}📁 ${dirName}${RST} | ${GREEN}🌿 ${branch}${RST} | ${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
-const L2 = `5h:${makeBar(fiveH)} ${fiveH}%${fiveHTag} | 7d:${makeBar(sevenD)} ${sevenD}%${sevenDTag} | ctx:${makeBar(ctxPct)} ${ctxPct}%`;
+const L2 = `${WHITE}5h${RST}:${makeBar(fiveH)} ${WHITE}${fiveH}%${RST}${fiveHTag} | ${WHITE}7d${RST}:${makeBar(sevenD)} ${WHITE}${sevenD}%${RST}${sevenDTag} | ${WHITE}ctx${RST}:${makeBar(ctxPct)} ${WHITE}${ctxPct}%${RST}`;
 const L3 = `${YELLOW}session:${fmtCost(sessionCost)}(${fmtTokens(sessionTokens)})${RST} | ${YELLOW}today:${fmtCost(todayCost)}(${fmtTokens(todayTokens)})${RST} | ${YELLOW}month:${fmtCost(monthCost)}(${fmtTokens(monthTokens)})${RST}`;
 const L4 = `${GREEN}${filesChanged} files +${linesAdd} -${linesDel}${RST}`;
 

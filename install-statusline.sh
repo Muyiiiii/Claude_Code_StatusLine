@@ -47,6 +47,7 @@ CYAN='\033[36m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
 LBLUE='\033[94m'
+WHITE='\033[97m'
 DIM='\033[2m'
 RST='\033[0m'
 
@@ -219,7 +220,7 @@ SEVEN_D_TXT=$(fmt_reset "$SEVEN_D_RESET")
 [ -n "$SEVEN_D_TXT" ] && SEVEN_D_TAG=" ${LBLUE}(${SEVEN_D_TXT})${RST}"
 
 echo -e "${CYAN}[${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  ${YELLOW}📁 ${DIR_NAME}${RST} | ${GREEN}🌿 ${BRANCH}${RST} | ${GREEN}↑$(fmt_tokens $INPUT_TOKENS)${RST} ${GREEN}↓$(fmt_tokens $OUTPUT_TOKENS)${RST}"
-echo -e "5h:$(make_bar $FIVE_H) ${FIVE_H}%${FIVE_H_TAG} | 7d:$(make_bar $SEVEN_D) ${SEVEN_D}%${SEVEN_D_TAG} | ctx:$(make_bar $CTX_PCT) ${CTX_PCT}%"
+echo -e "${WHITE}5h${RST}:$(make_bar $FIVE_H) ${WHITE}${FIVE_H}%${RST}${FIVE_H_TAG} | ${WHITE}7d${RST}:$(make_bar $SEVEN_D) ${WHITE}${SEVEN_D}%${RST}${SEVEN_D_TAG} | ${WHITE}ctx${RST}:$(make_bar $CTX_PCT) ${WHITE}${CTX_PCT}%${RST}"
 echo -e "${YELLOW}session:$(fmt_cost $SESSION_COST)($(fmt_tokens $SESSION_TOKENS))${RST} | ${YELLOW}today:$(fmt_cost $TODAY_COST)($(fmt_tokens $TODAY_TOKENS))${RST} | ${YELLOW}month:$(fmt_cost $MONTH_COST)($(fmt_tokens $MONTH_TOKENS))${RST}"
 echo -e "${GREEN}${FILES_CHANGED} files +${LINES_ADD} -${LINES_DEL}${RST}"
 STATUSLINE
