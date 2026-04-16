@@ -12,6 +12,7 @@ const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const LBLUE = "\x1b[94m";
 const WHITE = "\x1b[97m";
+const GREY = "\x1b[90m";
 const DIM = "\x1b[2m";
 const RST = "\x1b[0m";
 
@@ -105,7 +106,7 @@ function makeBar(pct, w = 8) {
   pct = Math.max(0, Math.min(100, pct || 0));
   const filled = Math.round((pct * w) / 100);
   const empty = w - filled;
-  return GREEN + "█".repeat(filled) + RST + DIM + "░".repeat(empty) + RST;
+  return GREEN + "█".repeat(filled) + RST + GREY + "░".repeat(empty) + RST;
 }
 
 // ── ccusage cache (non-blocking) ──

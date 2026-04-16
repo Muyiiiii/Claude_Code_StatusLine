@@ -48,6 +48,7 @@ GREEN='\033[32m'
 YELLOW='\033[33m'
 LBLUE='\033[94m'
 WHITE='\033[97m'
+GREY='\033[90m'
 DIM='\033[2m'
 RST='\033[0m'
 
@@ -137,7 +138,7 @@ make_bar() {
   local empty=$(( w - filled ))
   local bar="${GREEN}"
   for ((i=0; i<filled; i++)); do bar+="█"; done
-  bar+="${RST}${DIM}"
+  bar+="${RST}${GREY}"
   for ((i=0; i<empty; i++)); do bar+="░"; done
   bar+="${RST}"
   echo -ne "$bar"
