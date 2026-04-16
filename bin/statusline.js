@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Claude Code 自定义状态栏 (跨平台 Node.js 版本)
 
-const { execSync } = require("child_process");
-const { readFileSync, writeFileSync, mkdirSync, statSync } = require("fs");
+const { execSync, spawn } = require("child_process");
+const { readFileSync, writeFileSync, mkdirSync, statSync, existsSync, unlinkSync } = require("fs");
 const path = require("path");
 const os = require("os");
 
@@ -106,10 +106,12 @@ function makeBar(pct, w = 8) {
   return GREEN + "█".repeat(filled) + RST + DIM + "░".repeat(empty) + RST;
 }
 
-// ── ccusage cache ──
+// ── ccusage cache (non-blocking) ──
 const CACHE_DIR = path.join(os.tmpdir(), "ccusage_cache");
 const CACHE_FILE = path.join(CACHE_DIR, "daily.json");
+const CACHE_LOCK = path.join(CACHE_DIR, "daily.lock");
 const CACHE_TTL = 300; // seconds
+const LOCK_TTL = 60;   // seconds
 
 mkdirSync(CACHE_DIR, { recursive: true });
 
@@ -119,18 +121,26 @@ try {
   cacheAge = Math.floor((Date.now() - st.mtimeMs) / 1000);
 } catch {}
 
-if (cacheAge > CACHE_TTL) {
+// Auto-remove stale lock file (e.g. left behind by a crashed process)
+try {
+  const lockSt = statSync(CACHE_LOCK);
+  const lockAge = Math.floor((Date.now() - lockSt.mtimeMs) / 1000);
+  if (lockAge > LOCK_TTL) unlinkSync(CACHE_LOCK);
+} catch {}
+
+if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
   let runner = "npx";
   try { execSync("bun --version", { stdio: "ignore" }); runner = "bunx"; } catch {}
 
   const d = new Date();
   const monthStart = d.getFullYear().toString() + String(d.getMonth() + 1).padStart(2, "0") + "01";
-  const cmd = `${runner} ccusage@latest daily --json --since ${monthStart}`;
+  const tmpFile = CACHE_FILE + ".tmp";
 
-  try {
-    const out = execSync(cmd, { encoding: "utf-8", timeout: 15000, stdio: ["ignore", "pipe", "ignore"] });
-    if (out.trim()) writeFileSync(CACHE_FILE, out);
-  } catch {}
+  // Non-blocking: spawn in background, write to tmp then atomic rename
+  writeFileSync(CACHE_LOCK, "");
+  const cmd = `${runner} ccusage@latest daily --json --since ${monthStart} > "${tmpFile}" 2>/dev/null && mv "${tmpFile}" "${CACHE_FILE}"; rm -f "${CACHE_LOCK}"`;
+  const child = spawn("sh", ["-c", cmd], { detached: true, stdio: "ignore" });
+  child.unref();
 }
 
 // ── Read cached data ──

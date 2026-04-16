@@ -57,11 +57,23 @@ node bin/install.js
 1. **复制状态栏脚本** 到 `~/.claude/statusline.sh`（Bash）或 `~/.claude/statusline.js`（Node.js）
 2. **配置 `~/.claude/settings.json`**：
 
+Bash 版本：
 ```json
 {
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh",
+    "padding": 1
+  }
+}
+```
+
+Node.js 版本：
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline.js",
     "padding": 1
   }
 }

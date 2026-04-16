@@ -57,11 +57,23 @@ The installer performs two steps:
 1. **Copies the statusline script** to `~/.claude/statusline.sh` (bash) or `~/.claude/statusline.js` (Node.js)
 2. **Configures `~/.claude/settings.json`** to use the script:
 
+Bash version:
 ```json
 {
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh",
+    "padding": 1
+  }
+}
+```
+
+Node.js version:
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline.js",
     "padding": 1
   }
 }

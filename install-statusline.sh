@@ -189,12 +189,12 @@ if [[ -f "$CACHE_FILE" ]]; then
   td=$(jq -r --arg d "$TODAY" '.daily[]? | select(.date == $d)' "$CACHE_FILE" 2>/dev/null)
   if [[ -n "$td" ]]; then
     TODAY_COST=$(echo "$td" | jq -r '.totalCost // 0')
-    TODAY_TOKENS=$(echo "$td" | jq -r '.totalTokens // 0')
+    TODAY_TOKENS=$(echo "$td" | jq -r '((.inputTokens // 0) + (.outputTokens // 0))')
   fi
   mt=$(jq -r '.totals // empty' "$CACHE_FILE" 2>/dev/null)
   if [[ -n "$mt" ]]; then
     MONTH_COST=$(echo "$mt" | jq -r '.totalCost // 0')
-    MONTH_TOKENS=$(echo "$mt" | jq -r '.totalTokens // 0')
+    MONTH_TOKENS=$(echo "$mt" | jq -r '((.inputTokens // 0) + (.outputTokens // 0))')
   fi
 fi
 
@@ -228,12 +228,12 @@ echo "✅ 状态栏脚本已写入: $SCRIPT_PATH"
 
 # 更新 settings.json
 if [[ -f "$SETTINGS_PATH" ]]; then
-  # 已有配置文件，合并 statusLine 字段
-  if jq -e '.statusLine' "$SETTINGS_PATH" &>/dev/null; then
-    echo "⏭️  settings.json 已包含 statusLine 配置，跳过"
+  existed=$(jq -e '.statusLine' "$SETTINGS_PATH" &>/dev/null && echo 1 || echo 0)
+  jq '.statusLine = {"type":"command","command":"~/.claude/statusline.sh","padding":1}' \
+    "$SETTINGS_PATH" > "${SETTINGS_PATH}.tmp" && mv "${SETTINGS_PATH}.tmp" "$SETTINGS_PATH"
+  if [[ "$existed" == "1" ]]; then
+    echo "✅ 已替换 settings.json 中的 statusLine 配置（其他字段保留）"
   else
-    jq '. + {"statusLine":{"type":"command","command":"~/.claude/statusline.sh","padding":1}}' \
-      "$SETTINGS_PATH" > "${SETTINGS_PATH}.tmp" && mv "${SETTINGS_PATH}.tmp" "$SETTINGS_PATH"
     echo "✅ 已更新 settings.json"
   fi
 else
