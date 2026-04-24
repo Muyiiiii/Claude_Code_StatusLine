@@ -91,6 +91,7 @@ EFFORT=""
 if [[ -f "$HOME/.claude/settings.json" ]]; then
   raw=$(jq -r '.effortLevel // ""' "$HOME/.claude/settings.json" 2>/dev/null)
   case "$raw" in
+    max) EFFORT="Max" ;;
     xhigh) EFFORT="xHigh" ;;
     high) EFFORT="High" ;;
     medium) EFFORT="Medium" ;;

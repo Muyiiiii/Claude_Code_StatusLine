@@ -68,7 +68,7 @@ let effort = "";
 try {
   const s = JSON.parse(readFileSync(path.join(os.homedir(), ".claude", "settings.json"), "utf-8"));
   const raw = (s.effortLevel || "").toLowerCase();
-  const map = { xhigh: "xHigh", high: "High", medium: "Medium", low: "Low" };
+  const map = { max: "Max", xhigh: "xHigh", high: "High", medium: "Medium", low: "Low" };
   effort = map[raw] || "";
 } catch {}
 
