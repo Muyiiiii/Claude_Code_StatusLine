@@ -40,7 +40,8 @@ function get(obj, keyPath, fallback) {
 // ── Parse CC JSON ──
 const modelId = get(data, "model.id", "");
 const dir = get(data, "workspace.current_dir", ".");
-const dirName = path.basename(dir);
+let dirName = path.basename(dir);
+if (dirName.length > 30) dirName = dirName.slice(0, 27) + "...";
 
 const inputTokens = Number(get(data, "context_window.total_input_tokens", 0));
 const outputTokens = Number(get(data, "context_window.total_output_tokens", 0));
@@ -48,12 +49,13 @@ let ctxPct = Math.floor(Number(get(data, "context_window.used_percentage", 0)));
 
 const fiveH = Math.floor(Number(get(data, "rate_limits.five_hour.used_percentage", 0)));
 const sevenD = Math.floor(Number(get(data, "rate_limits.seven_day.used_percentage", 0)));
-const fiveHReset = Number(get(data, "rate_limits.five_hour.resets_at", 0));
-const sevenDReset = Number(get(data, "rate_limits.seven_day.resets_at", 0));
+const fiveHReset = get(data, "rate_limits.five_hour.resets_at", 0);
+const sevenDReset = get(data, "rate_limits.seven_day.resets_at", 0);
 
 const sessionCost = Number(get(data, "cost.total_cost_usd", 0));
 const linesAdd = Number(get(data, "cost.total_lines_added", 0));
 const linesDel = Number(get(data, "cost.total_lines_removed", 0));
+const fastMode = !!get(data, "fast_mode", false);
 
 // ── Model display name ──
 let modelVer;
@@ -63,20 +65,28 @@ else if (/sonnet-4-6|sonnet-4-2/.test(modelId)) modelVer = "Sonnet 4.6";
 else if (/haiku/.test(modelId)) modelVer = "Haiku 4.5";
 else modelVer = get(data, "model.display_name", "Claude");
 
-// ── Effort level (from ~/.claude/settings.json) ──
+// ── Effort level (input JSON first, fallback to ~/.claude/settings.json) ──
 let effort = "";
-try {
-  const s = JSON.parse(readFileSync(path.join(os.homedir(), ".claude", "settings.json"), "utf-8"));
-  const raw = (s.effortLevel || "").toLowerCase();
-  const map = { max: "Max", xhigh: "xHigh", high: "High", medium: "Medium", low: "Low" };
-  effort = map[raw] || "";
-} catch {}
+const map = { max: "Max", xhigh: "xHigh", high: "High", medium: "Medium", low: "Low" };
+let rawEffort = (get(data, "effort.level", "") || "").toLowerCase();
+if (!rawEffort) {
+  try {
+    const s = JSON.parse(readFileSync(path.join(os.homedir(), ".claude", "settings.json"), "utf-8"));
+    rawEffort = (s.effortLevel || "").toLowerCase();
+  } catch {}
+}
+effort = map[rawEffort] || "";
 
 // ── Git info ──
 let branch = "";
 try {
   execSync("git rev-parse --git-dir", { stdio: "ignore" });
-  branch = execSync("git branch --show-current", { encoding: "utf-8" }).trim() || "detached";
+  branch = execSync("git branch --show-current", { encoding: "utf-8" }).trim();
+  if (!branch) {
+    let short = "";
+    try { short = execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim(); } catch {}
+    branch = short ? `detached@${short}` : "detached";
+  }
 } catch {}
 
 // ── Helpers ──
@@ -90,7 +100,18 @@ function fmtCost(v) {
   return "$" + Number(v).toFixed(2);
 }
 
-function fmtReset(epoch) {
+function fmtReset(v) {
+  if (v === 0 || v === "0" || v == null || v === "") return "";
+  let epoch;
+  if (typeof v === "number") {
+    epoch = Math.floor(v);
+  } else if (/^[0-9]+(\.[0-9]+)?$/.test(String(v))) {
+    epoch = Math.floor(Number(v));
+  } else {
+    const parsed = Date.parse(String(v));
+    if (isNaN(parsed)) return "";
+    epoch = Math.floor(parsed / 1000);
+  }
   if (!epoch) return "";
   const diff = epoch - Math.floor(Date.now() / 1000);
   if (diff <= 0) return "now";
@@ -140,11 +161,22 @@ if (cacheAge > CACHE_TTL && !existsSync(CACHE_LOCK)) {
   const d = new Date();
   const monthStart = d.getFullYear().toString() + String(d.getMonth() + 1).padStart(2, "0") + "01";
   const tmpFile = CACHE_FILE + ".tmp";
+  const ccusageCmd = `${runner} ccusage@latest daily --json --since ${monthStart}`;
 
   // Non-blocking: spawn in background, write to tmp then atomic rename
   writeFileSync(CACHE_LOCK, "");
-  const cmd = `${runner} ccusage@latest daily --json --since ${monthStart} > "${tmpFile}" 2>/dev/null && mv "${tmpFile}" "${CACHE_FILE}"; rm -f "${CACHE_LOCK}"`;
-  const child = spawn("sh", ["-c", cmd], { detached: true, stdio: "ignore" });
+
+  let shellBin, shellArgs;
+  if (process.platform === "win32") {
+    const winCmd = `${ccusageCmd} > "${tmpFile}" 2>nul && move /y "${tmpFile}" "${CACHE_FILE}" & del "${CACHE_LOCK}"`;
+    shellBin = "cmd.exe";
+    shellArgs = ["/c", winCmd];
+  } else {
+    const shCmd = `${ccusageCmd} > "${tmpFile}" 2>/dev/null && mv "${tmpFile}" "${CACHE_FILE}"; rm -f "${CACHE_LOCK}"`;
+    shellBin = "sh";
+    shellArgs = ["-c", shCmd];
+  }
+  const child = spawn(shellBin, shellArgs, { detached: true, stdio: "ignore", windowsHide: true });
   child.unref();
 }
 
@@ -170,18 +202,27 @@ const sessionTokens = inputTokens + outputTokens;
 // ── Git files changed ──
 let filesChanged = 0;
 try {
-  const diff1 = execSync("git diff --numstat", { encoding: "utf-8" }).trim();
-  const diff2 = execSync("git diff --cached --numstat", { encoding: "utf-8" }).trim();
-  filesChanged = (diff1 ? diff1.split("\n").length : 0) + (diff2 ? diff2.split("\n").length : 0);
+  execSync("git rev-parse --git-dir", { stdio: "ignore" });
+  let diff;
+  try {
+    execSync("git rev-parse HEAD", { stdio: "ignore" });
+    diff = execSync("git diff HEAD --numstat", { encoding: "utf-8" }).trim();
+  } catch {
+    diff = execSync("git diff --cached --numstat", { encoding: "utf-8" }).trim();
+  }
+  filesChanged = diff ? diff.split("\n").length : 0;
 } catch {}
 
 // ── Output ──
 const effortTag = effort ? `${CYAN}·${effort}${RST}` : "";
-const fiveHTag = fiveHReset ? ` ${LBLUE}(${fmtReset(fiveHReset)})${RST}` : "";
-const sevenDTag = sevenDReset ? ` ${LBLUE}(${fmtReset(sevenDReset)})${RST}` : "";
+const fastTag = fastMode ? "⚡" : "";
+const fiveHTxt = fmtReset(fiveHReset);
+const sevenDTxt = fmtReset(sevenDReset);
+const fiveHTag = fiveHTxt ? ` ${LBLUE}(${fiveHTxt})${RST}` : "";
+const sevenDTag = sevenDTxt ? ` ${LBLUE}(${sevenDTxt})${RST}` : "";
 
 const SEP = ` ${WHITE}|${RST} `;
-const L1 = `${CYAN}[${modelVer}${RST}${effortTag}${CYAN}]${RST}  ${YELLOW}📁 ${dirName}${RST}${SEP}${GREEN}🌿 ${branch}${RST}${SEP}${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
+const L1 = `${CYAN}[${RST}${fastTag}${CYAN}${modelVer}${RST}${effortTag}${CYAN}]${RST}  ${YELLOW}📁 ${dirName}${RST}${SEP}${GREEN}🌿 ${branch}${RST}${SEP}${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`;
 const L2 = `${WHITE}5h${RST}:${makeBar(fiveH)} ${WHITE}${fiveH}%${RST}${fiveHTag}${SEP}${WHITE}7d${RST}:${makeBar(sevenD)} ${WHITE}${sevenD}%${RST}${sevenDTag}${SEP}${WHITE}ctx${RST}:${makeBar(ctxPct)} ${WHITE}${ctxPct}%${RST}`;
 const L3 = `${YELLOW}session:${fmtCost(sessionCost)}(${fmtTokens(sessionTokens)})${RST}${SEP}${YELLOW}today:${fmtCost(todayCost)}(${fmtTokens(todayTokens)})${RST}${SEP}${YELLOW}month:${fmtCost(monthCost)}(${fmtTokens(monthTokens)})${RST}`;
 const L4 = `${GREEN}${filesChanged} files +${linesAdd} -${linesDel}${RST}`;
