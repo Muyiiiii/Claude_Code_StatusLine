@@ -71,6 +71,8 @@ test("bash installer creates private settings and an executable pinned script", 
   assert.equal(rendered.status, 0, rendered.stderr);
   assert.match(rendered.stdout, /Fable 5/);
   assert.match(rendered.stdout, /·Max/);
+  assert.doesNotMatch(rendered.stdout, /\x1b\[97m/);
+  assert.match(rendered.stdout, /\x1b\[39m5h\x1b\[0m/);
 
   const hostile = spawnSync(scriptPath, [], {
     cwd: ROOT,

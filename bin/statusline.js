@@ -27,7 +27,9 @@ const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const LBLUE = "\x1b[94m";
-const WHITE = "\x1b[97m";
+// Use the terminal's foreground color for body text so it remains readable on
+// both light and dark themes. Bright white (97) disappears on light themes.
+const TEXT = "\x1b[39m";
 const GREY = "\x1b[90m";
 const RST = "\x1b[0m";
 
@@ -739,12 +741,12 @@ function renderStatus(data) {
   const sevenDayText = fmtReset(sevenDayReset);
   const fiveHourTag = fiveHourText ? ` ${LBLUE}(${fiveHourText})${RST}` : "";
   const sevenDayTag = sevenDayText ? ` ${LBLUE}(${sevenDayText})${RST}` : "";
-  const separator = ` ${WHITE}|${RST} `;
+  const separator = ` ${TEXT}|${RST} `;
   const sessionTokens = inputTokens + outputTokens;
 
   return [
     `${CYAN}[${RST}${fastTag}${CYAN}${modelName(data)}${RST}${effortTag}${CYAN}]${RST}  ${YELLOW}📁 ${dirName}${RST}${separator}${GREEN}🌿 ${git.branch}${RST}${separator}${GREEN}↑${fmtTokens(inputTokens)}${RST} ${GREEN}↓${fmtTokens(outputTokens)}${RST}`,
-    `${WHITE}5h${RST}:${makeBar(fiveHour)} ${WHITE}${fiveHour}%${RST}${fiveHourTag}${separator}${WHITE}7d${RST}:${makeBar(sevenDay)} ${WHITE}${sevenDay}%${RST}${sevenDayTag}${separator}${WHITE}ctx${RST}:${makeBar(contextPct)} ${WHITE}${contextPct}%${RST}`,
+    `${TEXT}5h${RST}:${makeBar(fiveHour)} ${TEXT}${fiveHour}%${RST}${fiveHourTag}${separator}${TEXT}7d${RST}:${makeBar(sevenDay)} ${TEXT}${sevenDay}%${RST}${sevenDayTag}${separator}${TEXT}ctx${RST}:${makeBar(contextPct)} ${TEXT}${contextPct}%${RST}`,
     `${YELLOW}session:${fmtCost(sessionCost)}(${fmtTokens(sessionTokens)})${RST}${separator}${YELLOW}today:${fmtCost(usage.todayCost)}(${fmtTokens(usage.todayTokens)})${RST}${separator}${YELLOW}month:${fmtCost(usage.monthCost)}(${fmtTokens(usage.monthTokens)})${RST}`,
     `${GREEN}${git.filesChanged} files +${linesAdded} -${linesRemoved}${RST}`,
   ];
@@ -752,7 +754,7 @@ function renderStatus(data) {
 
 function printFallback() {
   console.log(`${CYAN}[${RST}${CYAN}Claude${RST}${CYAN}]${RST}  ${YELLOW}📁 ?${RST}`);
-  console.log(`${WHITE}5h${RST}:${makeBar(0)} ${WHITE}0%${RST}`);
+  console.log(`${TEXT}5h${RST}:${makeBar(0)} ${TEXT}0%${RST}`);
   console.log(`${YELLOW}session:$0.00(0)${RST}`);
   console.log(`${GREEN}0 files +0 -0${RST}`);
 }

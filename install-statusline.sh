@@ -89,7 +89,8 @@ CYAN=$'\033[36m'
 GREEN=$'\033[32m'
 YELLOW=$'\033[33m'
 LBLUE=$'\033[94m'
-WHITE=$'\033[97m'
+# Follow the terminal foreground so body text is readable on light and dark themes.
+TEXT=$'\033[39m'
 GREY=$'\033[90m'
 RST=$'\033[0m'
 
@@ -407,9 +408,9 @@ SEVEN_D_TAG=""
 SEVEN_D_TXT=$(fmt_reset "$SEVEN_D_RESET")
 [ -n "$SEVEN_D_TXT" ] && SEVEN_D_TAG=" ${LBLUE}(${SEVEN_D_TXT})${RST}"
 
-printf '%s\n' "${CYAN}[${RST}${FAST_TAG}${CYAN}${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  ${YELLOW}📁 ${DIR_NAME}${RST} ${WHITE}|${RST} ${GREEN}🌿 ${BRANCH}${RST} ${WHITE}|${RST} ${GREEN}↑$(fmt_tokens "$INPUT_TOKENS")${RST} ${GREEN}↓$(fmt_tokens "$OUTPUT_TOKENS")${RST}"
-printf '%s\n' "${WHITE}5h${RST}:$(make_bar "$FIVE_H") ${WHITE}${FIVE_H}%${RST}${FIVE_H_TAG} ${WHITE}|${RST} ${WHITE}7d${RST}:$(make_bar "$SEVEN_D") ${WHITE}${SEVEN_D}%${RST}${SEVEN_D_TAG} ${WHITE}|${RST} ${WHITE}ctx${RST}:$(make_bar "$CTX_PCT") ${WHITE}${CTX_PCT}%${RST}"
-printf '%s\n' "${YELLOW}session:$(fmt_cost "$SESSION_COST")($(fmt_tokens "$SESSION_TOKENS"))${RST} ${WHITE}|${RST} ${YELLOW}today:$(fmt_cost "$TODAY_COST")($(fmt_tokens "$TODAY_TOKENS"))${RST} ${WHITE}|${RST} ${YELLOW}month:$(fmt_cost "$MONTH_COST")($(fmt_tokens "$MONTH_TOKENS"))${RST}"
+printf '%s\n' "${CYAN}[${RST}${FAST_TAG}${CYAN}${MODEL_VER}${RST}${EFFORT_TAG}${CYAN}]${RST}  ${YELLOW}📁 ${DIR_NAME}${RST} ${TEXT}|${RST} ${GREEN}🌿 ${BRANCH}${RST} ${TEXT}|${RST} ${GREEN}↑$(fmt_tokens "$INPUT_TOKENS")${RST} ${GREEN}↓$(fmt_tokens "$OUTPUT_TOKENS")${RST}"
+printf '%s\n' "${TEXT}5h${RST}:$(make_bar "$FIVE_H") ${TEXT}${FIVE_H}%${RST}${FIVE_H_TAG} ${TEXT}|${RST} ${TEXT}7d${RST}:$(make_bar "$SEVEN_D") ${TEXT}${SEVEN_D}%${RST}${SEVEN_D_TAG} ${TEXT}|${RST} ${TEXT}ctx${RST}:$(make_bar "$CTX_PCT") ${TEXT}${CTX_PCT}%${RST}"
+printf '%s\n' "${YELLOW}session:$(fmt_cost "$SESSION_COST")($(fmt_tokens "$SESSION_TOKENS"))${RST} ${TEXT}|${RST} ${YELLOW}today:$(fmt_cost "$TODAY_COST")($(fmt_tokens "$TODAY_TOKENS"))${RST} ${TEXT}|${RST} ${YELLOW}month:$(fmt_cost "$MONTH_COST")($(fmt_tokens "$MONTH_TOKENS"))${RST}"
 printf '%s\n' "${GREEN}${FILES_CHANGED} files +${LINES_ADD} -${LINES_DEL}${RST}"
 STATUSLINE
 

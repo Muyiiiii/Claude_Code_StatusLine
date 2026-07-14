@@ -136,6 +136,26 @@ test("normalizes hostile numeric, effort, and directory values", (t) => {
   assert.doesNotMatch(output, /⚡|·High/);
 });
 
+test("uses theme-adaptive text instead of fixed bright white", (t) => {
+  const sandbox = makeSandbox(t);
+  prepareFreshCache(sandbox);
+  const output = runStatusline(
+    {
+      rate_limits: {
+        five_hour: { used_percentage: 12 },
+        seven_day: { used_percentage: 26 },
+      },
+      context_window: { used_percentage: 35 },
+    },
+    sandbox
+  );
+
+  assert.doesNotMatch(output, /\x1b\[97m/);
+  assert.match(output, /\x1b\[39m5h\x1b\[0m/);
+  assert.match(output, /\x1b\[39m12%\x1b\[0m/);
+  assert.match(output, /\x1b\[39mctx\x1b\[0m/);
+});
+
 test("maps only known model IDs and preserves future display names", () => {
   const mappings = [
     ["claude-fable-5", "Fable 5"],
