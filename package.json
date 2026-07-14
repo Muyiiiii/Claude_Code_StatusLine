@@ -1,13 +1,37 @@
 {
-  "name": "claude-code-statusline",
+  "name": "muyi_code_statusline",
   "version": "1.0.0",
-  "description": "Custom status line for Claude Code — cross-platform (macOS/Linux/Windows)",
+  "description": "Custom status line for Claude Code — cross-platform",
   "bin": {
-    "claude-code-statusline": "./bin/install.js"
+    "muyi_code_statusline": "bin/install.js"
   },
   "scripts": {
-    "install-statusline": "node bin/install.js"
+    "install-statusline": "node bin/install.js",
+    "test": "node --test",
+    "prepublishOnly": "npm test"
   },
   "keywords": ["claude", "claude-code", "statusline", "cli"],
-  "license": "MIT"
+  "author": "Muyiiiii",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Muyiiiii/muyi_code_statusline.git"
+  },
+  "homepage": "https://github.com/Muyiiiii/muyi_code_statusline#readme",
+  "bugs": {
+    "url": "https://github.com/Muyiiiii/muyi_code_statusline/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "install-statusline.sh",
+    "install-statusline.ps1",
+    "assets",
+    "README_CN.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
